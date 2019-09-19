@@ -1,0 +1,298 @@
+4,20c4,13
+< static double const fracMult[] = { 0.0f, 1e-1f, 1e-2f, 1e-3f, 1e-4f, 1e-5f, 
+<     1e-6f, 1e-7f, 1e-8f, 1e-9f, 1e-10f, 1e-11f, 1e-12f, 1e-13f, 1e-14f, 1e-15f,
+<     1e-16f, 1e-17f, 1e-18f, 1e-19f, 1e-20f};
+<   inline float IO::convert(char const* source, char ** endPtr ) {
+<     char* end;
+<     // Change from int to long long, as need large representation on HeLa dataset.
+<     long long left = strtoll( source, &end, 10 );
+<     float results = left;
+<     if ( *end == '.' ) {
+<         char* start = end + 1;
+<         long long right = strtoll( start, &end, 10 );
+<         results += right * fracMult[ end - start ];
+<     }
+<     if ( endPtr != nullptr ) {
+<         *endPtr = end;
+<     }
+<     return results;
+---
+> inline float IO::convert(char const* source, char ** endPtr ) {
+>   char* end;
+>   int left = strtol( source, &end, 10 );
+>   float results = left;
+>   if ( *end == '.' ) {
+>       char* start = end + 1;
+>       int right = strtol( start, &end, 10 );
+>       static double const fracMult[] 
+>           = { 0.0, 0.1, 0.01, 0.001, 1e-4f, 1e-5f, 1e-6f, 1e-7f, 1e-8f, 1e-9f};
+>       results += right * fracMult[ end - start ];
+21a15,19
+>   if ( endPtr != nullptr ) {
+>       *endPtr = end;
+>   }
+>   return results;
+> }
+25,28c23,24
+<     unordered_map<int, vector<int>>* map_spectra_by_precursor_mass,
+<     unordered_map<string, vector<int>>* map_peptide_to_indices,
+<     unordered_map<string, int>* map_ms_title_to_index,
+<     int* spectra_size, string file, float scale, float min_mz,
+---
+>     unordered_map<string, int>* map_ms_titles_to_index,
+>     int* spectra_size, string file_name, float scale, float min_mz,
+30,52c26
+<     PEAK_INTENSITY_RESCALE_METHOD p_inten_rescale_method, bool remove_precursor,
+<     bool peptide_i2l, bool peptide_ptm_replace, 
+<     bool filter_unfragmented_ms2, bool verbose) {
+< 
+<   assert(PEAK_INTENSITY_RESCALE_METHOD::NONE <= p_inten_rescale_method &&
+<          PEAK_INTENSITY_RESCALE_METHOD::SQRT >= p_inten_rescale_method);
+< 
+< #ifdef FAST_PARSE
+<   cout << "[FAST_PARSE] Parsing mz and intensity w/ customized parser." << endl;
+<   cout << "In-house char* to float parser supports up to 20 decimal places." << endl;
+<   cout << "If this does not suit your needs, compile w/o -D FAST_PARSE" << endl;
+< #else
+<   cout << "[STAND_PARSE] Parsing mz and intensity w/ standard parsers." << endl;
+< #endif
+<   cout << "Loading spectra from file: " << file << endl;
+< 
+<   auto start_time = chrono::high_resolution_clock::now();
+< 
+<   ifstream infile(file);
+<   if (!infile.is_open()) {
+<     cout << "Error! file not open!" << endl;
+<     exit(-1);
+<   }
+---
+>     bool peak_normalized, bool remove_precursor, bool verbose) {
+58d31
+<   // Initialize all params.
+60a34
+>   int i_peak = 0;
+62c36,38
+<   string line, tmp;
+---
+>   string line, tmp, title = "NA", peptide = "NA";
+>   int charge = 0;
+>   float mz = 0, intensity = 0, precursor_mz = 0;
+64,72c40,41
+<   const string NA = "NA";
+<   double sum_intensity = 0;
+<   float mz, intensity, precursor_mz, strongest_intensity;
+<   int i_peak, charge;
+<   string file_name, peptide, protein, title;
+< 
+<   //TODO(leiwang): 50ppm for precursor peak. 
+<   // [abs(threotical - observed) / threotical] * 10^6.
+<   const float ppm = 50;
+---
+>   //TODO: 20ppm.  [abs(threotical - observed) / threotical] * 10^6.
+>   const float ppm = 20;
+78,82c47,51
+<   Reset(&sum_intensity, &intensity,
+<         &precursor_mz, &strongest_intensity,
+<         &charge, &i_peak,
+<         &file_name, &peptide, &protein,
+<         &title, NA, &filtered_peaks);
+---
+>   ifstream infile(file_name);
+>   if (!infile.is_open()) {
+>     cout << "Error! file not open!" << endl;
+>     exit(-1);
+>   }
+85d53
+< 
+98,121d65
+<     if (0 == line.find(FILENAME_MGF)) {
+<       file_name = line.substr(FILENAME_MGF.length() + 1);
+<       // Get rid of '^M', carriage-and-return created by Windows platform.
+<       if (file_name.back() == '\r') {
+<         file_name.pop_back();
+<       }
+<       continue;
+<     }
+<     if (0 == line.find(SEQ_MGF)) {
+<       peptide = line.substr(SEQ_MGF.length() + 1);
+<       // Get rid of '^M', carriage-and-return created by Windows platform.
+<       if (peptide.back() == '\r') {
+<         peptide.pop_back();
+<       }
+<       continue;
+<     }
+<     if (0 == line.find(PEPTIDE_MGF)) {
+<       peptide = line.substr(PEPTIDE_MGF.length() + 1);
+<       // Get rid of '^M', carriage-and-return created by Windows platform.
+<       if (peptide.back() == '\r') {
+<         peptide.pop_back();
+<       }
+<       continue;
+<     }
+123a68
+> 
+130d74
+< 
+141c85,89
+< 
+---
+>     // Initialize stuff. 
+>     // raw_peaks.clear();
+>     i_peak = 0;
+>     filtered_peaks.clear();
+>     
+161,165d108
+<       if (filter_unfragmented_ms2) {
+<         strongest_intensity = max(strongest_intensity, intensity);
+<         sum_intensity += intensity;
+<       }
+<       //cout << "[INFO] " << mz << " " << intensity << endl;
+167,170c110,111
+<       // Rescale intensity with hope to de-emphasize domiant peaks.
+<       if (PEAK_INTENSITY_RESCALE_METHOD::NONE == p_inten_rescale_method) {
+<         ;
+<       } else if (PEAK_INTENSITY_RESCALE_METHOD::LOG == p_inten_rescale_method) {
+---
+>       // Take the natural logarithm of intensity, mitigating dominant peaks.
+>       if (peak_normalized) {
+172,173d112
+<       } else if (PEAK_INTENSITY_RESCALE_METHOD::SQRT == p_inten_rescale_method) {
+<         intensity = intensity <= 0 ? 0 : sqrt(intensity);
+194,199d132
+<     //TODO(Lei Wang): Adjust the threshold. Maybe 0.9, 0.95.
+<     if (filter_unfragmented_ms2 && 
+<         static_cast<double>(strongest_intensity) > sum_intensity * 0.9) {
+<       continue;
+<     }
+< 
+206,208c139
+<     // Disabled the top_peak features on May 18, 2019.
+<     //vector<float> top_peak_mz = SelectTopPeakMZ(filtered_peaks);
+<     vector<float> top_peak_mz;
+---
+>     vector<float> top_peak_mz = SelectTopPeakMZ(filtered_peaks);
+216,226d146
+< 
+<     string modified_peptide = peptide;
+<     if (peptide_i2l) modified_peptide = Commons::ReplaceIWithL(modified_peptide);
+< 
+<     // Changes on May 12, 2019 by Lei Wang. 
+<     // If enabled, C+57.021 -> C(C), M+15.995 -> M(O)
+<     if (peptide_ptm_replace) {
+<       modified_peptide = Commons::ReplacePTMOnCWithText(modified_peptide, "(C)");
+<       modified_peptide = Commons::ReplacePTMOnMWithText(modified_peptide, "(O)");
+<     }
+< 
+228,229c148
+<         filtered_peaks, file_name, protein, peptide, modified_peptide,
+<         precursor_mz, title, title, top_peak_mz);
+---
+>         filtered_peaks, peptide, precursor_mz, title, title, top_peak_mz);
+231c150
+<     (*indexed_spectra).emplace_back(spectrum);
+---
+>     (*indexed_spectra).push_back(spectrum);
+233,243c152,154
+<     const int cur_cnt = spectra_cnt_stored + spectra_cnt;
+< 
+<     (*map_spectra_by_charge)[charge].emplace_back(cur_cnt);
+<         
+<     (*map_spectra_by_precursor_mass)[Commons::MassToIndex(precursor_mz)].
+<         emplace_back(cur_cnt);
+<     (*map_ms_title_to_index)[title] = cur_cnt;
+< 
+<     if (!peptide.empty()) {
+<       (*map_peptide_to_indices)[peptide].emplace_back(cur_cnt);
+<     }
+---
+>     (*map_spectra_by_charge)[charge].push_back(
+>         spectra_cnt_stored + spectra_cnt);
+>     (*map_ms_titles_to_index)[title] = spectra_cnt_stored + spectra_cnt;
+250,255c161,166
+<     Reset(&sum_intensity, &intensity,
+<           &precursor_mz, &strongest_intensity,
+<           &charge, &i_peak,
+<           &file_name, &peptide, &protein,
+<           &title, NA,
+<           &filtered_peaks);
+---
+>     // Reset charge, peptide, title, precursor_mz, intensity.
+>     charge = 0;
+>     precursor_mz = 0;
+>     intensity = 0;
+>     peptide = "NA";
+>     title = "NA";
+257,261c168
+< 
+<   auto end_time = chrono::high_resolution_clock::now();
+<   auto elapsed_read = chrono::duration_cast<std::chrono::duration<double>> 
+<       (end_time - start_time).count();
+<   cout << "Finish reading " << spectra_cnt << " spectra from file takes secs: " << elapsed_read << endl;
+---
+>   //cout << "read #spectra: " << spectra_cnt << endl;
+263a171
+>   //cout << "read #spectra: " << spectra_cnt << ", from: " << file_name << endl;
+267,287d174
+< void IO::Reset(double* sum_intensity, float* intensity,
+<                float* precursor_mz, float* strongest_intensity,
+<                int* charge, int* i_peak,
+<                string* file_name, string* peptide, string* protein,
+<                string* title, string na, Peaks* filtered_peaks) {
+<   *sum_intensity = 0.;
+< 
+<   *intensity = 0.;
+<   *precursor_mz = 0.;
+<   *strongest_intensity = 0.;
+< 
+<   *charge = 0;
+<   *i_peak = 0;
+< 
+<   *file_name = na;
+<   *peptide = na;
+<   *protein = na;
+<   *title = na;
+<   (*filtered_peaks).clear();
+< }
+< 
+305,308c192,194
+<     bool is_clustered, bool is_consensus, int charge, int count, 
+<     const EmbededPeaks& embeded_peaks, const Peaks& raw_peaks,
+<     const Peaks& filtered_peaks, string file_name, string protein, 
+<     string raw_peptide, string modified_peptide, float pre_mz, 
+---
+>     bool is_clustered, bool is_consensus, int charge,
+>     int count, const EmbededPeaks& embeded_peaks, const Peaks& raw_peaks,
+>     const Peaks& filtered_peaks, string peptide, float pre_mz,
+315d200
+<   (*spectrum)._file_name = file_name;
+318,320c203
+<   (*spectrum)._peptide_raw = raw_peptide;
+<   (*spectrum)._peptide_modified = modified_peptide;
+<   (*spectrum)._protein = protein;
+---
+>   (*spectrum)._peptide = peptide;
+446c329
+<       float sum_intensity = last_peak._intensity + to_merge_peak._intensity;
+---
+>       float sum_inten = last_peak._intensity + to_merge_peak._intensity;
+449,451c332,334
+<       last_peak._mz = last_peak._mz * last_peak._intensity / sum_intensity +
+<         to_merge_peak._mz * to_merge_peak._intensity / sum_intensity;
+<       last_peak._intensity = sum_intensity;
+---
+>       last_peak._mz = last_peak._mz * last_peak._intensity / sum_inten +
+>         to_merge_peak._mz * to_merge_peak._intensity / sum_inten;
+>       last_peak._intensity = sum_inten;
+474,477d356
+< 
+<   string file_name = "NA", protein = "NA", raw_peptide = "NA", 
+<          modified_peptide = "NA";
+< 
+479,480c358,359
+<       new_peaks, filtered_peaks, file_name, protein, raw_peptide, 
+<       modified_peptide, ave_precursor_mz, title, component_titles, top_peak_mz);
+---
+>       new_peaks, filtered_peaks, "CONSENSUS_SPECTRUM_PEPTIDE",
+>       ave_precursor_mz, title, component_titles, top_peak_mz);
+483a363
+> 
