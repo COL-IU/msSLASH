@@ -66,6 +66,25 @@ class Commons {
       unordered_map<int, unordered_map<int, lsh_table>>* um_lib_hash_table_on_mass_bin,
       unordered_map<int, vector<int>>* um_exp_hash_keys);
 
+   static void CountSpectraPerBucket(
+      const vector<Spectrum*>& lib_spectra,
+      unordered_map<int, pair<int, int>>* um_table,
+      int hash_func_num,
+      int hash_dimension,
+      int threads_to_use,
+      float sample_ratio);
+
+  // Anlyze the frequency distribution of number of spectra inside per bucket
+  static double AnalyzeBucketSizeFreqDist(
+      const HyperParams& params,
+      const vector<Spectrum*>& lib_spectra);
+
+  // Anlyze the frequency distribution of number of spectra inside per bucket
+  static double AnalyzeBucketSizeFreqDistSubsampledSpace(
+      const HyperParams& params,
+      const vector<Spectrum*>& lib_spectra,
+      float sample_ratio);
+
   static double FilterCandidates(
     const HyperParams& params,
     const vector<Spectrum*>& lib_spectra,

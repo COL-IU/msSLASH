@@ -45,9 +45,9 @@ class Spectrum {
   Peaks _raw_peaks;
   
   Spectrum(): _is_clustered(false), _is_consensus(false), _precursor_mz(0), 
-    _charge(0), _count(1), _file_name("NA"), _peptide_raw("NA"), 
-    _peptide_modified("NA"), _protein("NA"), _title("NA"), 
-    _component_titles("NA") {};
+    _charge(0), _count(1), _file_name(NA), _peptide_raw(NA), 
+    _peptide_modified(NA), _protein(NA), _title(NA), 
+    _component_titles(NA) {};
 
   ~Spectrum() {}
 
@@ -119,6 +119,14 @@ class Spectrum {
   bool considerChargeNPrecMass(int charge, float precursor_mz, float epsilon) const {
     if (_charge != charge) return false;
     return fabs(_precursor_mz - precursor_mz) < epsilon;
+  }
+
+  bool isDecoy() const {
+    if (NA == _peptide_raw || _peptide_raw.find(DECOY) != string::npos) {
+      return true;
+    } else {
+      return false;
+    }
   }
 };
 

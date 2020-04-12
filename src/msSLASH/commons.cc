@@ -80,17 +80,17 @@ void Commons::ReadMsgfIds(
 
   map_title_to_peptide->clear();
   map_peptide_to_titles->clear();
-  ifstream fp(fileName);
-  if (!fp.is_open()) {
+  ifstream reader(fileName);
+  if (!reader.is_open()) {
     cout << "Error! Can not open" << fileName << endl;
     exit(-1);
   }
   string line;
   // Get rid of 1st row, i.e headers.
-  getline(fp, line);
+  getline(reader, line);
   string title, peptide;
   int i = 0;
-  while (getline(fp, line)) {
+  while (getline(reader, line)) {
     int pos = line.find('\t');
     title = line.substr(0, pos);
     peptide = line.substr(pos+1);
@@ -98,7 +98,7 @@ void Commons::ReadMsgfIds(
     (*map_title_to_peptide)[title] = peptide;
     (*map_peptide_to_titles)[peptide].emplace_back(title);
   }
-  fp.close();
+  reader.close();
 }
 
 void Commons::SpectraSearchBruteForce(
@@ -176,6 +176,124 @@ void Commons::SpectraSearchBruteForce(
       << omp_time << ", omp(general) takes secs: " << timer.stop() << endl; 
   cout << "NOT consider precursor mass and charge, total #candidates: " << num_candidtes << ", avg #candidates: " << num_candidtes*1./size << endl;
   cout << "Consider precursor mass and charge, total #candidates: " << num_candidates_passed_filter << ", avg #candidates: " << num_candidates_passed_filter*1./size << endl;
+}
+
+void Commons::CountSpectraPerBucket(
+    const vector<Spectrum*>& lib_spectra,
+    unordered_map<int, pair<int, int>>* um_table,
+    int hash_func_num,
+    int hash_dimension,
+    int threads_to_use,
+    float sample_ratio=1.) {
+
+  const int lib_size = lib_spectra.size();
+
+  random_device rd;  //Will be used to obtain a seed for the random number engine
+  mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+  uniform_real_distribution<> dis(0, 1.0);
+
+  const auto hash_table = Core::LSH::generateHashTable(hash_func_num, hash_dimension);
+
+  vector<int> lib_hash_keys(lib_size);
+
+  // Focus on one iteration's distribution of bucket size.
+  // unordered_map<int, pair<int, int>> um_table;  // pair<true, decoy>
+  
+  #pragma omp parallel for num_threads(threads_to_use)
+  for (unsigned int i = 0; i < lib_size; ++i) {
+      const auto& spectrum = *lib_spectra[i];
+    if (dis(gen) <= sample_ratio) { 
+      lib_hash_keys[i] = Core::LSH::random_projection(spectrum, hash_table);
+    } else {
+      lib_hash_keys[i] = -1;
+    }
+  }
+
+  for (unsigned int i = 0; i < lib_size; ++i) {
+    if (-1 == lib_hash_keys[i]) continue;  // -1 means not counted towards subsampled
+    const auto& spectrum = *lib_spectra[i];
+    //bool decoy = spectrum._peptide_raw == "NA";
+    if (spectrum.isDecoy()) {
+      (*um_table)[lib_hash_keys[i]].second += 1;
+    } else {
+      (*um_table)[lib_hash_keys[i]].first += 1;
+    }
+  }
+
+}
+
+double Commons::AnalyzeBucketSizeFreqDist(
+    const HyperParams& params,
+    const vector<Spectrum*>& lib_spectra) {
+  Utility::Timer timer;
+
+  // Aggregate multiple iterations' distribution of bucket size.
+  unordered_map<int, pair<int, int>> um_table;  // <hash_key, pair<#target, #decoy>>
+
+  for (unsigned int it = 0; it < params.iteration; ++it) {
+    cout << "assigning spectra to buckets in iteration: " << it << endl;
+
+    CountSpectraPerBucket(lib_spectra,
+                          &um_table,
+                          params.hash_func_num,
+                          params.hash_dimension,
+                          params.threads_to_use);
+
+    // Focus on one iteration's distribution of bucket size.
+    /*
+    string path = params.output_dir.empty() ? "./" : params.output_dir;
+    path += "bucket_size_for_h" + to_string(params.hash_func_num) + "i" + to_string(it) + ".csv";
+    ofstream writer(path);
+    writer << "key,target,decoy" << endl;
+    for (const auto& kv : um_table) {
+      writer << kv.first << "," << kv.second.first << "," << kv.second.second << endl; 
+    }
+    writer.close();
+    */
+  }
+  // Aggregate multiple iterations' distribution of bucket size.
+  string path = params.output_dir.empty() ? "./" : params.output_dir;
+  path += "bucket_size_for_h" + to_string(params.hash_func_num) + "i" + to_string(params.iteration) + ".csv";
+  cout << "write bucket size frequency distribution to: " << path << endl;
+  ofstream writer(path);
+  writer << "key,target,decoy" << endl;
+  for (const auto& kv : um_table) {
+    writer << kv.first << "," << kv.second.first << "," << kv.second.second << endl; 
+  }
+  writer.close();
+  return timer.stop();
+}
+
+double Commons::AnalyzeBucketSizeFreqDistSubsampledSpace(
+    const HyperParams& params,
+    const vector<Spectrum*>& lib_spectra,
+    float sample_ratio=1.) {
+
+  Utility::Timer timer;
+
+  cout << "sample ratio: " << sample_ratio << endl;
+
+  // Aggregate multiple iterations' distribution of bucket size.
+  unordered_map<int, pair<int, int>> um_table;  // <hash_key, pair<#target, #decoy>>
+
+  cout << "assigning spectra to buckets" << endl;
+
+  CountSpectraPerBucket(lib_spectra,
+                        &um_table,
+                        params.hash_func_num,
+                        params.hash_dimension,
+                        params.threads_to_use,
+                        sample_ratio);
+
+  string path = params.output_dir.empty() ? "./" : params.output_dir;
+  path += "bucket_size_for_h" + to_string(params.hash_func_num) + ".i1.subsample_ratio" + to_string(sample_ratio) + ".csv";
+  ofstream writer(path);
+  writer << "key,target,decoy" << endl;
+  for (const auto& kv : um_table) {
+    writer << kv.first << "," << kv.second.first << "," << kv.second.second << endl; 
+  }
+  writer.close();
+  return timer.stop();
 }
 
 double Commons::ApplySingleLSH(

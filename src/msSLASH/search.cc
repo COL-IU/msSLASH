@@ -52,8 +52,8 @@ void SetParameters(
 void configure_parser(cli::Parser& parser) {
   parser.set_optional<bool>("u", "unfragment", false, "[Bool] Filter unfragmented ms2.");
 
-  parser.set_optional<int>("i", "iter", 100, "[Int] iteration for searching with LSH.");
-  parser.set_optional<int>("n", "hash", 8, "[Int] hash functions for LSH.");
+  parser.set_optional<int>("i", "iteration", 100, "[Int] iteration for searching with LSH.");
+  parser.set_optional<int>("n", "hash_func_num", 8, "[Int] hash functions for LSH.");
   parser.set_optional<int>("r", "rescale", 1, "[Int] PEAK_INTENSITY_RESCALE_METHOD.");
   parser.set_optional<int>("t", "threads", 20, "[Int] num of threads to use.");
 
@@ -66,7 +66,6 @@ void configure_parser(cli::Parser& parser) {
   parser.set_required<string>("d", "decoy", "[String] decoy library mgf file.");
   parser.set_required<string>("e", "experimental", "[String] experimental mgf file.");
   parser.set_required<string>("l", "library", "[String] library mgf file.");
-
 }
 
 int main (int argc, char *argv[]) {
@@ -89,7 +88,7 @@ int main (int argc, char *argv[]) {
   cout << endl;
 
   bool peptide_i2l = true;  // peptide I2L.
-  bool peptide_ptm_replace = true;
+  bool peptide_ptm_replace = true;  // C(C) and M(O)
 
   bool match_isotopic_peak = true;
   // bool match_isotopic_peak = false;
@@ -109,15 +108,13 @@ int main (int argc, char *argv[]) {
                                      peptide_ptm_replace);
 
   // Read decoy library MGF files.
-  if (!decoy_file.empty()) {
-    Search::Commons::ReadSpectraHelper(params, decoy_file, &lib_spectra, 
-                                       &map_lib_spectra_by_charge,
-                                       &map_lib_spectra_by_mass, 
-                                       &map_lib_peptide_to_indices,
-                                       &map_lib_ms_title_to_index,
-                                       peptide_i2l,
-                                       peptide_ptm_replace);
-  }
+  Search::Commons::ReadSpectraHelper(params, decoy_file, &lib_spectra, 
+                                     &map_lib_spectra_by_charge,
+                                     &map_lib_spectra_by_mass, 
+                                     &map_lib_peptide_to_indices,
+                                     &map_lib_ms_title_to_index,
+                                     peptide_i2l,
+                                     peptide_ptm_replace);
 
   unordered_map<string, vector<int>> map_lib_modified_peptide_to_indices;
   for (const auto& kv : map_lib_peptide_to_indices) {
@@ -183,9 +180,9 @@ int main (int argc, char *argv[]) {
       &top_titles,
       match_isotopic_peak);
 #endif
-  
-  ofstream fd(params.msSLASH_tsv_file);
-  fd << "Index\t"
+
+  ofstream writer(params.msSLASH_tsv_file);
+  writer << "Index\t"
       "Title\t"
       "TopMatch\t"
       "TopScore\t"
@@ -194,14 +191,15 @@ int main (int argc, char *argv[]) {
 
   for (unsigned int i = 0; i < top_matches.size(); ++i) {
     const string& title = (*exp_spectra[i])._title;
-    fd << i << "\t"
+    writer << i << "\t"
         << title << "\t" 
         << top_matches[i] << "\t" 
         << top_scores[i] << "\t" 
         << top_raw_peptides[i] << "\t"
         << endl;
   }
-  fd.close();
+  writer.close();
+
 
   // Code should be added before this line.
   

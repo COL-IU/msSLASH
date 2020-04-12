@@ -41,6 +41,7 @@ class HyperParams{
   string msSLASH_tsv_file;
   string cluster_file;
   string suffix;
+  string output_dir;
 
   HyperParams() {
     cout << "--Default Constructor for HyperParams called.--" << endl; 
@@ -96,6 +97,7 @@ inline ostream& operator<<(ostream& os, const HyperParams& params) {
   os << "[int] select_topk: " << params.select_topk << endl;
   os << "[int] threads_to_use: " << params.threads_to_use << endl;
   os << "[int] window_mz: " << params.window_mz << endl;
+  os << "[string] output_dir: " << params.output_dir << endl;
   os << "[string] file_name: " << params.file_name << endl;
   os << "[string] result_path: " << params.result_path << endl;
   os << "[string] result_prefix: " << params.result_prefix << endl;
