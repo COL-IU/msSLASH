@@ -184,15 +184,17 @@ int main (int argc, char *argv[]) {
   ofstream writer(params.msSLASH_tsv_file);
   writer << "Index\t"
       "Title\t"
+      "Charge\t"
       "TopMatch\t"
       "TopScore\t"
       "TopPep\t"
       << endl;
 
   for (unsigned int i = 0; i < top_matches.size(); ++i) {
-    const string& title = (*exp_spectra[i])._title;
+    const auto& spectrum = *exp_spectra[i];
     writer << i << "\t"
-        << title << "\t" 
+        << spectrum._title << "\t" 
+        << spectrum._charge << "\t" 
         << top_matches[i] << "\t" 
         << top_scores[i] << "\t" 
         << top_raw_peptides[i] << "\t"
