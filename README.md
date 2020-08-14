@@ -12,8 +12,8 @@ g++ with version 5.1.0+ is required.
 ## Usage
 - This process will search input spectra dataset against designated target library and the respective decoy library.  A csv file will be generated at the end to hold the searching results.
   1. `cd bin`
-  2. Usage: `./msSLASH -e experimental_spectra -d decoy_library -l target_library [-c fragment_precision] [-t threads] [-n hash_func_num] [-i iteration] [-s min_similarity] [-a min_mz] [-r rescale_method] [-o output_file].`
-  3. Typical example: `./msSLASH -n 100 -i 10 -t 20 -l $target -e $exp -d $decoy -o $out_file -r 1 --precision 0.5  --min_mz 0 -u`. You will find the searching result file with name `$out_file` if specified, otherwise you will find it in the same dir as the `$exp`, with suffix `.msSLASH.tsv`.
+  2. Usage: `./msSLASH -e experimental_spectra -d decoy_library -l target_library [-c fragment_precision] [-t threads] [-n hash_func_num] [-i iteration] [-s min_similarity] [-a min_mz] [-r rescale_method] [-o output_file] [-m precursor_mass_tolerance].`
+  3. Typical example: `./msSLASH -n 100 -i 10 -t 20 -l $target -e $exp -d $decoy -o $out_file -r 1 -m 0.05 --precision 0.5  --min_mz 0 -u`. You will find the searching result file with name `$out_file` if specified, otherwise you will find it in the same dir as the `$exp`, with suffix `.msSLASH.tsv`.
   4. Description
   Type `./msSLASH -h` to see full list of command options.
         * -u,    --unfragment
@@ -43,6 +43,10 @@ g++ with version 5.1.0+ is required.
         * -c    --precision
             > [Float] fragment precision in Da.
     This parameter is optional. The default value is '0.500000'. 
+
+        * -m    --precursor_mass_tolerance
+            > [Float] precursor mass tolerance in Da.
+    This parameter is optional. The default value is '0.050000'. 
 
         * -r    --rescale
             > [Int] PEAK_INTENSITY_RESCALE_METHOD.

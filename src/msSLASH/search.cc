@@ -36,6 +36,7 @@ void SetParameters(
   (*params).min_similarity = parser.get<float>("s");
   (*params).threads_to_use = parser.get<int>("t");
   (*params).precision = parser.get<float>("c");
+  (*params).precursor_mass_tolerance = parser.get<float>("m");
   (*params).resizeHashDim();  // Fixed on 09062019
 
   (*params).msSLASH_tsv_file = parser.get<string>("o");
@@ -59,6 +60,7 @@ void configure_parser(cli::Parser& parser) {
 
   parser.set_optional<float>("a", "min_mz", 200, "[Float] min mz for peaks.");
   parser.set_optional<float>("c", "precision", 0.5, "[Float] fragment precision.");
+  parser.set_optional<float>("m", "precursor_mass_tolerance", 0.05, "[Float] precursor mass tolerance in Da.");
   parser.set_optional<float>("s", "similarity", 0., "[Float] similarity threshold .");
 
   parser.set_optional<string>("o", "out_file", "", "[String] out file contanining msSLASH searching results.");
