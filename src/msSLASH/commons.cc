@@ -114,7 +114,7 @@ void Commons::SpectraSearchBruteForce(
     bool match_isotopic_peak) {
 
   cout << "SpectraSearchBruteForce with min sim: " << params.min_similarity << endl;
-  cout << "SpectraSearchBruteForce with fragment peak precision: " << params.precision << endl;
+  cout << "SpectraSearchBruteForce with fragment peak precision: " << (params.use_precision_one_thompson ? "1Th": std::to_string(params.precision)) << endl;
 
   omp_set_num_threads(params.threads_to_use);
   cout << "Use #threads: " << params.threads_to_use << endl;
@@ -151,7 +151,7 @@ void Commons::SpectraSearchBruteForce(
         prev_precursor_id = precursor_id;
         auto& indices = map_spectra_by_mass[precursor_id];
 
-        float sim = 0;
+        float sim = 0, precision = 0;
         num_candidtes += indices.size();
         for (unsigned int j = 0; j < indices.size(); ++j) {
           const Spectrum& candidate = *lib_spectra[indices[j]];
@@ -160,7 +160,8 @@ void Commons::SpectraSearchBruteForce(
                   candidate._charge, candidate._precursor_mz,
                   params.precursor_mass_tolerance)) continue;
           ++num_candidates_passed_filter;
-          sim = 1 - Core::Distance::cosine(target, candidate, params.precision);
+          precision = params.use_precision_one_thompson ? 1. / target._charge : params.precision;
+          sim = 1 - Core::Distance::cosine(target, candidate, precision);
           if (sim > params.min_similarity && sim > (*top_scores)[i]) {
             (*top_matches)[i] = indices[j];
             (*top_scores)[i] = sim;
@@ -401,7 +402,7 @@ double Commons::FilterCandidates(
 
           const auto& probe_values = it_probe->second;
 
-          float sim = 0;
+          float sim = 0, precision = 0;
           num_candidtes += probe_values.size();
 
           num_candidtes_local += probe_values.size();
@@ -419,7 +420,8 @@ double Commons::FilterCandidates(
             ++num_candidates_passed_filter;
 
             //const auto& cur = *lib_spectra[index];
-            sim = 1 - Core::Distance::cosine(target, cur, params.precision);
+            precision = params.use_precision_one_thompson ? 1. / target._charge : params.precision;
+            sim = 1 - Core::Distance::cosine(target, cur, precision);
             if (sim > params.min_similarity && sim > (*top_scores)[i]) {
               (*top_matches)[i] = index;
               (*top_scores)[i] = sim;
@@ -457,7 +459,7 @@ void Commons::SpectraSearchLSH(
     vector<string>* top_titles,
     bool match_isotopic_peak) {
   cout << "SpectraSearchLSH with min sim: " << params.min_similarity << endl;
-  cout << "SpectraSearchLSH with fragment peak precision: " << params.precision << endl;
+  cout << "SpectraSearchLSH with fragment peak precision: " << (params.use_precision_one_thompson ? "1Th": std::to_string(params.precision)) << endl;
   cout << "SpectraSearchLSH with iteration: " << params.iteration << endl;
 
   const int size = exp_spectra.size();

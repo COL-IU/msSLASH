@@ -14,6 +14,7 @@ class HyperParams{
  public:
   bool remove_precursor;
   bool filter_unfragmented_ms2;
+  bool use_precision_one_thompson;
 
   float precursor_mass_tolerance;
   float max_mz;
@@ -86,7 +87,7 @@ inline ostream& operator<<(ostream& os, const HyperParams& params) {
   os << "[float] min_mz: " << params.min_mz << endl;
   os << "[float] min_similarity: " << params.min_similarity << endl;
   os << "[float] mz_scale: " << params.mz_scale << endl;
-  os << "[float] precision: " << params.precision << endl;
+  os << "[float] precision: " << (params.use_precision_one_thompson ? "1Th" : std::to_string(params.precision)) << endl;
   os << "[float] shared_peak_mz_epsilon: " << params.shared_peak_mz_epsilon << endl;
   os << "[float] union_find_merging_threshold: " << params.union_find_merging_threshold << endl;
 

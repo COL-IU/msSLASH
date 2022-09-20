@@ -50,6 +50,6 @@ const regex regPTM_M("M\\+15\\.995");  // M+15.995 for MSGF searching result.
 const regex regPTM_C("C\\+57\\.021");  // C+57.021 for MSGF searching result.
 
 // Constants for raw peaks size for pre-allocating memory.
-const int MAX_PEAK_SIZE = 10000;
+const int MAX_PEAK_SIZE = 1e5;
 }  // namespace Utility
 #endif
