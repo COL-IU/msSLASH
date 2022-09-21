@@ -28,7 +28,7 @@ void IO::ReadSpectraFromMGF(vector<Spectrum*>* indexed_spectra,
     unordered_map<string, int>* map_ms_title_to_index,
     int* spectra_size, string file, float scale, float min_mz,
     float max_mz, float precision, int topK, int bin_size,
-    PEAK_INTENSITY_RESCALE_METHOD p_inten_rescale_method, bool remove_precursor,
+    PEAK_INTENSITY_RESCALE_METHOD p_inten_rescale_method, bool remove_precursor, bool remove_precursor_isotopic_peaks, 
     bool peptide_i2l, bool peptide_ptm_replace,
     bool filter_unfragmented_ms2, bool verbose) {
 
@@ -139,6 +139,14 @@ void IO::ReadSpectraFromMGF(vector<Spectrum*>* indexed_spectra,
     precursor_peak_tol =  precursor_mz * ppm / 1000000;
     precursor_no_water_peak_tol = peak_mz_remove_without_water * ppm / 1000000;
 
+    std::vector<float> precursor_mzs = {precursor_mz};
+    if (remove_precursor_isotopic_peaks) {
+      precursor_mzs.push_back(precursor_mz + 1. / charge);
+      precursor_mzs.push_back(precursor_mz - 1. / charge);
+      precursor_mzs.push_back(precursor_mz + 2. / charge);
+      precursor_mzs.push_back(precursor_mz - 2. / charge);
+    }
+
     // Read peaks.
     do {
       if (string::npos != line.find(END_IONS_MGF)) {
@@ -179,11 +187,20 @@ void IO::ReadSpectraFromMGF(vector<Spectrum*>* indexed_spectra,
       }
 
       // Filter out peaks around precursor_mz and precursor_mz- H2O/charge.
-      if (remove_precursor && (
-          fabs(mz - precursor_mz) < precursor_peak_tol ||
-          fabs(mz - peak_mz_remove_without_water) <
-          precursor_no_water_peak_tol)) {
-        continue;
+      if (remove_precursor) {
+        bool is_precursor_peak = false;
+        if (fabs(mz - peak_mz_remove_without_water) < precursor_no_water_peak_tol) {
+          is_precursor_peak = true;
+        }
+        for (const auto& target : precursor_mzs) {
+          if (fabs(mz - target) < precursor_peak_tol) {
+            is_precursor_peak = true;
+            break;
+          }
+        }
+        if (is_precursor_peak) {
+          continue;
+        }
       }
 
       // raw_peaks.push_back(Peak(mz, intensity));

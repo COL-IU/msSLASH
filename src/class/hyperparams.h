@@ -14,6 +14,7 @@ class HyperParams{
  public:
   bool remove_precursor;
   bool filter_unfragmented_ms2;
+  bool remove_precursor_isotopic_peaks;
   bool use_precision_one_thompson;
 
   float precursor_mass_tolerance;
@@ -79,8 +80,9 @@ class HyperParams{
 inline ostream& operator<<(ostream& os, const HyperParams& params) {
   os << "--Output HyperParams Begins--" << endl;
 
-  os << "[bool] remove_precursor: " << params.remove_precursor << endl;
-  os << "[bool] filter_unfragmented_ms2: " << params.filter_unfragmented_ms2 << endl;
+  os << "[bool] remove_precursor: " << std::boolalpha << params.remove_precursor << endl;
+  os << "[bool] filter_unfragmented_ms2: " << std::boolalpha << params.filter_unfragmented_ms2 << endl;
+  os << "[bool] remove_precursor_isotopic_peaks: " << std::boolalpha << params.remove_precursor_isotopic_peaks << std::endl;
 
   os << "[float] precursor_mass_tolerance: " << params.precursor_mass_tolerance << endl;
   os << "[float] max_mz: " << params.max_mz << endl;

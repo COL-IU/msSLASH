@@ -48,6 +48,7 @@ void Commons::ReadSpectraHelper(
                                   params.window_mz, 
                                   static_cast<Utility::PEAK_INTENSITY_RESCALE_METHOD>(params.peak_intensity_rescale_method),
                                   params.remove_precursor,
+                                  params.remove_precursor_isotopic_peaks,
                                   peptide_i2l,
                                   peptide_ptm_replace,
                                   params.filter_unfragmented_ms2);

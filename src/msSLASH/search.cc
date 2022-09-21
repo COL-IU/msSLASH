@@ -40,7 +40,8 @@ void SetParameters(
   (*params).resizeHashDim();  // Fixed on 09062019
 
   (*params).msSLASH_tsv_file = parser.get<string>("o");
-  (*params).use_precision_one_thompson = parser.get<float>("precision_1th");
+  (*params).use_precision_one_thompson = parser.get<bool>("precision_1th");
+  (*params).remove_precursor_isotopic_peaks = parser.get<bool>("remove_precursor_isotopic_peaks");
 
   *lib_file = parser.get<string>("l");
   *exp_file = parser.get<string>("e");
@@ -54,6 +55,7 @@ void SetParameters(
 void configure_parser(cli::Parser& parser) {
   parser.set_optional<bool>("u", "unfragment", false, "[Bool] Filter unfragmented ms2.");
   parser.set_optional<bool>("precision_1th", "precision_1th", false, "use 1th=1/charge for precision");
+  parser.set_optional<bool>("remove_precursor_isotopic_peaks", "remove_precursor_isotopic_peaks", false, "[Bool] whether to remove precursor mz isotopic peaks.");
 
   parser.set_optional<int>("i", "iteration", 100, "[Int] iteration for searching with LSH.");
   parser.set_optional<int>("n", "hash_func_num", 8, "[Int] hash functions for LSH.");

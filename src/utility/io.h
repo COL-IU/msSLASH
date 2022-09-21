@@ -42,7 +42,7 @@ class IO {
       int* spectra_size, string file_name, float scale, float min_mz,
       float max_mz, float precision, int select_topk, int window_mz,
       PEAK_INTENSITY_RESCALE_METHOD p_inten_rescale_method,
-      bool remove_precursor, bool peptide_i2l, bool peptide_ptm_replace, 
+      bool remove_precursor, bool remove_precursor_isotopic_peaks,  bool peptide_i2l, bool peptide_ptm_replace,
       bool filter_unfragmented_ms2, bool verbose=false);
 
 
