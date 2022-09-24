@@ -214,6 +214,9 @@ void IO::ReadSpectraFromMGF(vector<Spectrum*>* indexed_spectra,
       continue;
     }
 
+    // This is to handle peaks are not sorted within each spectrum.
+    std::sort(raw_peaks.begin(), raw_peaks.begin() + i_peak, [](const Core::Peak& a, const Core::Peak& b) {return a._mz < b._mz;});
+
     BinTopKPeak(&filtered_peaks, raw_peaks, i_peak, topK, bin_size);
     RemoveAdjacentPeaks(&filtered_peaks, precision);
     Normalize(&filtered_peaks, scale);
